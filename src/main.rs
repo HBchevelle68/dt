@@ -3,9 +3,8 @@ use goblin::elf::Elf;
 use std::{
     error::Error,
     fs,
-    io::Write,
-    path::PathBuf,
-    process::{Command, Stdio},
+    path::{Path, PathBuf},
+    process::Command,
 };
 
 /// Simple program to greet a person
@@ -16,23 +15,49 @@ struct Args {
     path: PathBuf,
 
     /// Function you wish to disassemble
-    //#[arg(short, long)]
     func: String,
+
+    /// List available symbols
+    #[arg(short, long)]
+    list: bool,
+}
+
+// gdb -batch -ex "disassemble/rs $FUNCTION" "$EXECUTABLE"
+fn src_disasm(path: &Path, func: &str) -> Result<(), Box<dyn Error>> {
+    let tmpfnc = format!("disassemble/rs {}", func);
+    let output = Command::new("/usr/bin/gdb")
+        .arg("-batch")
+        .arg("-ex")
+        .arg(tmpfnc)
+        .arg(path.to_str().unwrap())
+        .output();
+
+    println!(
+        "{}",
+        String::from_utf8_lossy(&output.as_ref().unwrap().stderr)
+    );
+    println!("{}", String::from_utf8_lossy(&output.unwrap().stdout));
+
+    Ok(())
 }
 
 // gdb -batch -ex 'file ~/test' -ex 'disassemble add'
-fn no_src_disasm(path: &PathBuf, func: &str) -> Result<(), Box<dyn Error>> {
-    // let args = format!(
-    //     "-batch -ex 'file {}' -ex 'disassemble {}\'",
-    //     path.to_string_lossy(),
-    //     func,
-    // );
-    let tmpf = format!("\'file {}\'", path.to_string_lossy());
-    let tmpfnc = format!("\'disassemble {}\'", func);
-    let args = vec!["-batch", "-ex", &tmpf, "-ex", &tmpfnc];
-    let mut output = Command::new("gdb").args(args).output();
+fn no_src_disasm(path: &Path, func: &str) -> Result<(), Box<dyn Error>> {
+    let tmpf = format!("file {}", path.to_str().unwrap());
+    let tmpfnc = format!("disassemble {}", func);
+    let output = Command::new("/usr/bin/gdb")
+        .arg("-batch")
+        .arg("-ex")
+        .arg(tmpf)
+        .arg("-ex")
+        .arg(tmpfnc)
+        .output();
 
-    println!("{}", String::from_utf8_lossy(&output.unwrap().stderr));
+    println!(
+        "{}",
+        String::from_utf8_lossy(&output.as_ref().unwrap().stderr)
+    );
+    println!("{}", String::from_utf8_lossy(&output.unwrap().stdout));
 
     Ok(())
 }
@@ -62,7 +87,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match has_debug(&args.path) {
         Ok(true) => {
             println!("HAS DEBUG!");
-            no_src_disasm(&args.path, &args.func)
+            src_disasm(&args.path, &args.func)
         }
         Ok(false) => {
             println!("NO DEBUG!");
