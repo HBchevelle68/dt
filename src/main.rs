@@ -1,13 +1,10 @@
 use clap::Parser;
 use goblin::elf::Elf;
-use std::{
-    error::Error,
-    fs,
-    path::{Path, PathBuf},
-    process::Command,
-};
+use std::{error::Error, fs, path::PathBuf};
 
-/// Simple program to greet a person
+mod disassem;
+
+/// Small disassembly tool to help with other projects and as a learning project to learn Rust
 #[derive(Parser, Debug)]
 #[command(author = "HBchevelle68", version="0.1", about, long_about = None)]
 struct Args {
@@ -20,46 +17,6 @@ struct Args {
     /// List available symbols
     #[arg(short, long)]
     list: bool,
-}
-
-// gdb -batch -ex "disassemble/rs $FUNCTION" "$EXECUTABLE"
-fn src_disasm(path: &Path, func: &str) -> Result<(), Box<dyn Error>> {
-    let tmpfnc = format!("disassemble/rs {}", func);
-    let output = Command::new("/usr/bin/gdb")
-        .arg("-batch")
-        .arg("-ex")
-        .arg(tmpfnc)
-        .arg(path.to_str().unwrap())
-        .output();
-
-    println!(
-        "{}",
-        String::from_utf8_lossy(&output.as_ref().unwrap().stderr)
-    );
-    println!("{}", String::from_utf8_lossy(&output.unwrap().stdout));
-
-    Ok(())
-}
-
-// gdb -batch -ex 'file ~/test' -ex 'disassemble add'
-fn no_src_disasm(path: &Path, func: &str) -> Result<(), Box<dyn Error>> {
-    let tmpf = format!("file {}", path.to_str().unwrap());
-    let tmpfnc = format!("disassemble {}", func);
-    let output = Command::new("/usr/bin/gdb")
-        .arg("-batch")
-        .arg("-ex")
-        .arg(tmpf)
-        .arg("-ex")
-        .arg(tmpfnc)
-        .output();
-
-    println!(
-        "{}",
-        String::from_utf8_lossy(&output.as_ref().unwrap().stderr)
-    );
-    println!("{}", String::from_utf8_lossy(&output.unwrap().stdout));
-
-    Ok(())
 }
 
 fn has_debug(path: &PathBuf) -> Result<bool, Box<dyn Error>> {
@@ -75,7 +32,7 @@ fn has_debug(path: &PathBuf) -> Result<bool, Box<dyn Error>> {
                 Ok(false)
             }
         }
-        Err(e) => Err(Box::new(e)), //Box::<dyn std::error::Error(e)>,
+        Err(e) => Err(Box::new(e)),
     }
 }
 
@@ -87,11 +44,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match has_debug(&args.path) {
         Ok(true) => {
             println!("HAS DEBUG!");
-            src_disasm(&args.path, &args.func)
+            disassem::src_disasm(&args.path, &args.func)
         }
         Ok(false) => {
             println!("NO DEBUG!");
-            no_src_disasm(&args.path, &args.func)
+            disassem::no_src_disasm(&args.path, &args.func)
         }
         Err(e) => Err(e),
     }
