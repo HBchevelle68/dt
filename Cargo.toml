@@ -4,11 +4,23 @@ version = "0.1.0"
 edition = "2021"
 build = "build.rs"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+clap = { version = "*", features = ["derive"] }
+goblin = { version = "*" }
+
 [build-dependencies]
 cc = "1.0.78"
 gcc = "*"
 
-[dependencies]
-clap = { version = "*", features = ["derive"] }
-goblin = { version = "*" }
+[profile.release]
+strip = true
+lto = true
+# Increases compile time but allows 
+# for futher optimizations
+codegen-units = 1
+panic = "abort"
+
+
+# Smallest build
+# cargo build -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort\
+# --release --target x86_64-unknown-linux-gnu
