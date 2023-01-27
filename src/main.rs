@@ -2,7 +2,7 @@ use clap::Parser;
 use goblin::elf::Elf;
 use std::{error::Error, fs, path::PathBuf};
 
-mod disassem;
+mod disasm;
 
 /// Small disassembly tool to help with other projects and as a learning project to learn Rust
 #[derive(Parser, Debug)]
@@ -44,11 +44,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match has_debug(&args.path) {
         Ok(true) => {
             println!("HAS DEBUG!");
-            disassem::src_disasm(&args.path, &args.func)
+            disasm::src_disasm(&args.path, &args.func)
         }
         Ok(false) => {
             println!("NO DEBUG!");
-            disassem::no_src_disasm(&args.path, &args.func)
+            disasm::no_src_disasm(&args.path, &args.func)
         }
         Err(e) => Err(e),
     }
