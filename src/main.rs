@@ -1,23 +1,9 @@
-use clap::Parser;
+//use clap::Parser;
 use goblin::elf::Elf;
 use std::{error::Error, fs, path::PathBuf};
 
+mod cli;
 mod disasm;
-
-/// Small disassembly tool to help with other projects and as a learning project to learn Rust
-#[derive(Parser, Debug)]
-#[command(author = "HBchevelle68", version="0.1", about, long_about = None)]
-struct Args {
-    /// Path to binary to disassemble
-    path: PathBuf,
-
-    /// Function you wish to disassemble
-    func: String,
-
-    /// List available symbols
-    #[arg(short, long)]
-    list: bool,
-}
 
 fn has_debug(path: &PathBuf) -> Result<bool, Box<dyn Error>> {
     // This could be improved by only reading in
@@ -37,19 +23,26 @@ fn has_debug(path: &PathBuf) -> Result<bool, Box<dyn Error>> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut args = Args::parse();
+    //let mut args = Args::parse();
 
-    args.path = args.path.canonicalize()?;
+    let matches = cli::dt_cli().get_matches();
 
-    match has_debug(&args.path) {
-        Ok(true) => {
-            println!("HAS DEBUG!");
-            disasm::src_disasm(&args.path, &args.func)
-        }
-        Ok(false) => {
-            println!("NO DEBUG!");
-            disasm::no_src_disasm(&args.path, &args.func)
-        }
-        Err(e) => Err(e),
+    let arg_path = matches.get_one::<PathBuf>("FILE").unwrap();
+
+    // Figure out what we need to do next
+    if let Some(arg_func) = matches.get_one::<String>("FUNC") {
+        return match has_debug(&arg_path) {
+            Ok(true) => {
+                println!("HAS DEBUG!");
+                disasm::src_disasm(&arg_path, &arg_func)
+            }
+            Ok(false) => {
+                println!("NO DEBUG!");
+                disasm::no_src_disasm(&arg_path, &arg_func)
+            }
+            Err(e) => Err(e),
+        };
     }
+
+    Ok(())
 }
