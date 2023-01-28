@@ -1,4 +1,4 @@
-use clap::{arg, value_parser, Command};
+use clap::{arg, value_parser, ArgAction, Command};
 use std::path::PathBuf;
 
 /// TODO! Document
@@ -10,20 +10,28 @@ pub fn dt_cli() -> Command {
         .arg(
             arg!(<FILE>)
             .help("Path to file")
-            .value_parser(path_parser)
+            .value_parser(value_parser!(std::path::PathBuf))
             .required(true)
         )
         .arg(
-            arg!(<FUNC>)
+            arg!(func: -f)
+            .long("func")
             .help("Function to disassemble")
             .value_parser(value_parser!(String))
             .requires("FILE")
         )
+        .arg(
+            arg!(list: -l)
+            .help("List symbols")
+            .long("list-syms")
+            .action(ArgAction::SetTrue)
+            .conflicts_with("func")
+        )
 }
 
-fn path_parser(path: &str) -> Result<PathBuf, String> {
-    match PathBuf::from(path).canonicalize() {
-        Ok(pb) => Ok(pb),
-        Err(e) => Err(format!("Error parsing FILE {}", e)),
-    }
-}
+// fn path_parser(path: &str) -> Result<PathBuf, String> {
+//     match PathBuf::from(path).canonicalize() {
+//         Ok(pb) => Ok(pb),
+//         Err(e) => Err(format!("Error parsing FILE {}", e)),
+//     }
+// }
