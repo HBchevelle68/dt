@@ -1,5 +1,4 @@
 use clap::{arg, value_parser, ArgAction, Command};
-use std::path::PathBuf;
 
 /// TODO! Document
 pub fn dt_cli() -> Command {
@@ -14,11 +13,12 @@ pub fn dt_cli() -> Command {
             .required(true)
         )
         .arg(
-            arg!(func: -f)
+            arg!(func: -f <FUNC>)
             .long("func")
             .help("Function to disassemble")
             .value_parser(value_parser!(String))
             .requires("FILE")
+            .conflicts_with("list") 
         )
         .arg(
             arg!(list: -l)
@@ -28,10 +28,3 @@ pub fn dt_cli() -> Command {
             .conflicts_with("func")
         )
 }
-
-// fn path_parser(path: &str) -> Result<PathBuf, String> {
-//     match PathBuf::from(path).canonicalize() {
-//         Ok(pb) => Ok(pb),
-//         Err(e) => Err(format!("Error parsing FILE {}", e)),
-//     }
-// }

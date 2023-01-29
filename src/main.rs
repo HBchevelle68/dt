@@ -7,8 +7,6 @@ mod disasm;
 mod dt_elf;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    //let mut args = Args::parse();
-
     let matches = cli::dt_cli().get_matches();
 
     let arg_path = matches.get_one::<PathBuf>("FILE").unwrap();
@@ -19,16 +17,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return match dt_elf::has_debug(&bytes) {
             Ok(true) => {
                 println!("[+] Debug symbols found");
-                disasm::src_disasm(&arg_path, &arg_func)
+                disasm::src_disasm(arg_path, arg_func)
             }
             Ok(false) => {
                 println!("[*] No debug symbols found");
-                disasm::no_src_disasm(&arg_path, &arg_func)
+                disasm::no_src_disasm(arg_path, arg_func)
             }
             Err(e) => Err(e),
         };
     } else if let Some(_lsym) = matches.get_one::<bool>("list") {
-        dt_elf::get_syms(&bytes);
+        return dt_elf::get_all_syms(&bytes);
     }
 
     Ok(())

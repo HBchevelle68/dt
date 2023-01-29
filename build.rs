@@ -16,4 +16,6 @@ fn main() {
         .unwrap();
 
     println!("cargo:rerun-if-changed=example/test.c");
+
+    //todo!("Add static builds. Likely with a musl toolchain");
 }
