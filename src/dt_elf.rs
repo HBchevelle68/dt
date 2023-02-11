@@ -4,18 +4,6 @@ use std::error::Error;
 
 const SYMFAIL: &str = "<FAILED TO RETRIEVE>";
 
-// From
-// #define SHN_UNDEF	0		/* Undefined section reference */
-// #define SHN_LORESERVE	(-0x100u)	/* Begin range of reserved indices */
-// #define SHN_LOPROC	(-0x100u)	/* Begin range of appl-specific */
-// #define SHN_HIPROC	(-0xE1u)	/* End range of appl-specific */
-// #define SHN_LOOS	(-0xE0u)	/* OS specific semantics, lo */
-// #define SHN_HIOS	(-0xC1u)	/* OS specific semantics, hi */
-// #define SHN_ABS		(-0xFu)		/* Associated symbol is absolute */
-// #define SHN_COMMON	(-0xEu)		/* Associated symbol is in common */
-// #define SHN_XINDEX	(-0x1u)		/* Section index is held elsewhere */
-// #define SHN_HIRESERVE	(-0x1u)		/* End range of reserved indices */
-// #define SHN_BAD		(-0x101u)	/* Used internally by bfd */
 #[derive(Debug)]
 struct ResolvedSym<'a> {
     /// Resolved symbol a human readable string
@@ -24,28 +12,38 @@ struct ResolvedSym<'a> {
     info: goblin::elf::Sym,
 }
 
-impl ResolvedSym {
+impl ResolvedSym<'_> {
     fn ndx_to_str(&self) -> &str {
         match self.info.st_shndx as u32 {
-            section_header::SHN_UNDEF => &"UNDEF",
+            section_header::SHN_UNDEF => &"UND",
             section_header::SHN_LORESERVE => &"LORESRVE",
             section_header::SHN_ABS => &"ABS",
-            _ => ,
+            _ => "NDX_ERR",
         }
     }
 }
 
 fn display_syms(syms: &Vec<ResolvedSym>) {
+    let num = syms.len();
+    if num > 0 {
+        println!("Symbol table '.dynsym' contains {num} entries:");
+        println!(
+            "{:>3}: {:>6} {:>15} {:<8} {:<6} {:<8} {:>4} {:<4}",
+            "Num", "Value", "Size", "Type", "Bind", "Vis", "Ndx", "Name",
+        );
+    }
+
     for (i, s) in syms.iter().enumerate() {
         println!(
-            "{:>3}: {:0>16} {:>5} {:<8} {:>8} {:>8} {:>4}",
+            "{:>3}: {:0>16} {:>5} {:<8} {:<6} {:>8} {:>4} {:<4}",
             i,
             s.info.st_value,
             s.info.st_size,
             type_to_str(s.info.st_type()),
             bind_to_str(s.info.st_bind()),
             visibility_to_str(s.info.st_visibility()),
-            s.info.st_shndx
+            s.ndx_to_str(),
+            s.symbol,
         )
     }
 }
