@@ -1,8 +1,35 @@
 use goblin::elf64::sym::{bind_to_str, type_to_str, visibility_to_str};
 use goblin::{elf::Elf, elf64::section_header};
 use std::error::Error;
+use std::fs;
 
 const SYMFAIL: &str = "<FAILED TO RETRIEVE>";
+
+#[derive(Debug)]
+struct FileData<'a> {
+    path: &'a str,
+    bin: Option<Elf>,
+    dynsyms: Vec<ResolvedSym<'a>>,
+    syms: Vec<ResolvedSym<'a>>,
+}
+
+impl FileData<'_> {
+    fn new(path: &str) -> FileData {
+        if let Ok(bytes) = fs::read(path) {
+            // Read bytes successfully
+            if let Ok(bytes) = Elf::parse(&bytes) {
+                String::new()
+            } else {
+            }
+        }
+
+        //Elf::parse(bytes)
+    }
+
+    fn process_dynsyms(&mut self) {
+        unimplemented!();
+    }
+}
 
 #[derive(Debug)]
 struct ResolvedSym<'a> {
