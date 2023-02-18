@@ -13,6 +13,7 @@ pub struct FileData<'a> {
 }
 
 impl FileData<'_> {
+    // Dpes not fully process the elf
     pub fn new<'a>(path: &'a str, bytes: &'a [u8]) -> FileData<'a> {
         match Elf::parse(bytes) {
             Ok(bin) => FileData {

@@ -3,6 +3,7 @@ use std::{fs, path::PathBuf};
 mod cli;
 mod disasm;
 mod dtelf;
+use dtelf::FileData;
 
 mod codes;
 use codes::DtCode;
@@ -31,7 +32,8 @@ fn dt() -> DtCode {
                     }
                 };
             } else if let Some(_lsym) = matches.get_one::<bool>("list") {
-                println!("wee");
+                let elf_file = FileData::new(arg_path.to_str().unwrap(), &bytes);
+                dbg!(elf_file);
             }
             result
         }
