@@ -6,4 +6,5 @@ pub enum DtCode {
     BadArg = -2,
     IoReadFail = -3,
     ElfParse = -4,
+    ElfNoDynSym = -5,
 }

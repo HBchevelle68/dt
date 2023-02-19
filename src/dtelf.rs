@@ -1,5 +1,7 @@
+use goblin::elf::symver::Verneed;
+use goblin::elf::Elf;
+use goblin::elf64::section_header;
 use goblin::elf64::sym::{bind_to_str, type_to_str, visibility_to_str};
-use goblin::{elf::Elf, elf64::section_header};
 use std::error::Error;
 
 const SYMFAIL: &str = "<FAILED TO RETRIEVE>";
@@ -7,30 +9,63 @@ const SYMFAIL: &str = "<FAILED TO RETRIEVE>";
 #[derive(Debug)]
 pub struct FileData<'a> {
     path: &'a str,
-    bin: Option<Elf<'a>>,
+    bin: Elf<'a>,
     dynsyms: Vec<ResolvedSym<'a>>,
     syms: Vec<ResolvedSym<'a>>,
+    verneed: Vec<Verneed<'a>>,
 }
 
 impl FileData<'_> {
-    // Dpes not fully process the elf
-    pub fn new<'a>(path: &'a str, bytes: &'a [u8]) -> FileData<'a> {
+    // Does not fully process the binary
+    // Instead this simply sets up the bare minimum needed
+    // to do as much or as little further processing as
+    // requested
+    pub fn lazy_new<'a>(path: &'a str, bytes: &'a [u8]) -> Result<FileData<'a>, Box<dyn Error>> {
+        // If parsing fails, dt as a whole
+        // should really just bail. Just
+        // pass back the error
         match Elf::parse(bytes) {
-            Ok(bin) => FileData {
+            Ok(bin) => Ok(FileData {
                 path,
-                bin: Some(bin),
+                bin: bin,
                 dynsyms: Default::default(),
                 syms: Default::default(),
-            },
-            Err(e) => {
-                println!("{e}");
-                FileData::default()
-            }
+                verneed: Default::default(),
+            }),
+            Err(e) => Err(Box::new(e)),
         }
     }
 
-    fn process_dynsyms(&mut self) {
+    pub fn display_dynsyms(&mut self) {
         unimplemented!();
+    }
+
+    pub fn process_dynsyms(&mut self) {
+        for dsym in &self.bin.dynsyms {
+            self.dynsyms.push(ResolvedSym {
+                symbol: self.bin.dynstrtab.get_at(dsym.st_name).unwrap_or(SYMFAIL),
+                version: None,
+                info: dsym,
+            })
+        }
+        dbg!(&self.dynsyms);
+    }
+
+    fn process_verneed(&mut self) -> bool {
+        // Goblin stores this data raw and Elf files
+        // store this data somewhat deeply nested.
+        // Let's bring this data more to the forefront
+        // for easier access
+        for verneed in self.bin.verneed.unwrap().iter() {
+            dbg!(&verneed);
+            self.verneed.push(verneed);
+        }
+        // The Elfxx_Verneed section is an optional
+        // section. Its completely possible, this info
+        // is just simply not here. This is not an error
+        // and is in compliance with ELF standard
+        // https://refspecs.linuxfoundation.org/LSB_3.0.0/LSB-PDA/LSB-PDA.junk/symversion.html
+        self.verneed.is_empty()
     }
 }
 
@@ -41,6 +76,7 @@ impl Default for FileData<'_> {
             bin: Default::default(),
             dynsyms: Default::default(),
             syms: Default::default(),
+            verneed: Default::default(),
         }
     }
 }

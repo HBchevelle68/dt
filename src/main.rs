@@ -12,6 +12,8 @@ fn dt() -> DtCode {
     let matches = cli::dt_cli().get_matches();
 
     let arg_path = matches.get_one::<PathBuf>("FILE").unwrap();
+
+    // TODO can this get moved to be done later?
     let res = match fs::read(arg_path) {
         Ok(bytes) => {
             let mut result = DtCode::Success;
@@ -32,8 +34,15 @@ fn dt() -> DtCode {
                     }
                 };
             } else if let Some(_lsym) = matches.get_one::<bool>("list") {
-                let elf_file = FileData::new(arg_path.to_str().unwrap(), &bytes);
-                dbg!(elf_file);
+                match FileData::lazy_new(arg_path.to_str().unwrap(), &bytes) {
+                    Ok(elf_file) => {
+                        elf_file.process_dynsyms();
+                    }
+                    Err(e) => {
+                        println!("{e}");
+                        result = DtCode::ElfParse;
+                    }
+                };
             }
             result
         }
