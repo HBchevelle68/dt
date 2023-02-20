@@ -109,28 +109,20 @@ impl FileData<'_> {
         }
     }
 
-    fn process_sym_version_info(&mut self) -> bool {
-        // Goblin stores this data raw and Elf files
-        // store this data somewhat deeply nested.
-        // Let's bring this data more to the forefront
-        // for easier access
-        match &self.bin.versym {
-            Some(versym_sec) => {
-                self.versyms = versym_sec.into_iter().collect();
-                match &self.bin.verneed {
-                    Some(verneed_sec) => self.verneed = verneed_sec.into_iter().collect(),
-                    None => {}
-                }
-            }
-            _ => {}
-        }
-
-        // The Elfxx_Verneed section is an optional
-        // section. Its completely possible, this info
-        // is just simply not here. This is not an error
-        // and is in compliance with ELF standard
+    fn process_sym_version_info(&mut self) {
+        // The Elfxx_Verneed section is an optional section. Its completely possible, this info
+        // is just simply not here. This is not an error and is in compliance with ELF standard
         // https://refspecs.linuxfoundation.org/LSB_3.0.0/LSB-PDA/LSB-PDA.junk/symversion.html
-        self.verneed.is_empty() && self.versyms.is_empty()
+        //
+        // Goblin stores this data raw and Elf files store this data somewhat deeply nested.
+        // Let's bring this data more to the forefront for easier access
+        if let Some(versym_sec) = &self.bin.versym {
+            self.versyms = versym_sec.into_iter().collect();
+
+            if let Some(verneed_sec) = &self.bin.verneed {
+                self.verneed = verneed_sec.into_iter().collect()
+            };
+        };
     }
 }
 
@@ -154,69 +146,3 @@ impl ResolvedSym<'_> {
         }
     }
 }
-
-// fn resolve_dynamic_symbols<'a>(
-//     bin: &'a Elf<'a>,
-//     symstrs: &Vec<ResolvedSym<'a>>,
-// ) -> Option<Vec<ResolvedSym<'a>>> {
-//     if bin.interpreter.is_none() {
-//         // TODO
-//         // Add feedback??
-//         None
-//     } else {
-//         let mut dynsyms_resolved = vec![];
-//         // Iterate over each Dynamic Symbol
-//         // Index into .dynsymtab, pull symbol string
-//         // Check if string pulled is in the symbol table
-//         // if so, use string from symbol table
-//         //
-//         // Not a massive fan of this, I feel there must
-//         // be a more efficient way to resolve this
-//         for dynsym in bin.dynsyms.iter().by_ref() {
-//             let mut final_sym = bin.dynstrtab.get_at(dynsym.st_name).unwrap_or(SYMFAIL);
-
-//             for s in symstrs.iter().map(|sym| sym.symbol) {
-//                 if s.contains(final_sym) {
-//                     final_sym = s;
-//                 }
-//             }
-
-//             let tmp = ResolvedSym {
-//                 symbol: final_sym,
-//                 info: dynsym,
-//             };
-
-//             dynsyms_resolved.push(tmp);
-//         }
-//         Some(dynsyms_resolved)
-//     }
-// }
-
-// fn resolve_symbols<'a>(bin: &'a Elf<'a>) -> Vec<ResolvedSym<'a>> {
-//     let mut syms_resolved = vec![];
-//     for sym in bin.syms.iter().by_ref() {
-//         let tmp = ResolvedSym {
-//             symbol: bin.strtab.get_at(sym.st_name).unwrap_or(SYMFAIL),
-//             info: sym,
-//         };
-//         syms_resolved.push(tmp);
-//     }
-//     syms_resolved
-// }
-
-// pub fn get_all_syms(bytes: &[u8]) -> Result<(), Box<dyn Error>> {
-//     match Elf::parse(bytes) {
-//         Ok(bin) => {
-//             let syms_resolved = resolve_symbols(&bin);
-//             if !syms_resolved.is_empty() {
-//                 if let Some(dynsyms_resolved) = resolve_dynamic_symbols(&bin, &syms_resolved) {
-//                     display_syms(&dynsyms_resolved);
-//                 }
-//                 Ok(())
-//             } else {
-//                 Err("[!] No symbols found....something is busted".into())
-//             }
-//         }
-//         Err(e) => Err(Box::new(e)),
-//     }
-// }
