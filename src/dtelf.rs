@@ -4,7 +4,8 @@ use goblin::elf64::section_header;
 use goblin::elf64::sym::{bind_to_str, type_to_str, visibility_to_str};
 use std::error::Error;
 
-const SYMFAIL: &str = "<FAILED TO RETRIEVE>";
+// Unwrap failure
+const UWFAIL: &str = "<_error_>";
 
 #[derive(Debug)]
 pub struct FileData<'a> {
@@ -74,7 +75,7 @@ impl FileData<'_> {
     pub fn process_dynsyms(&mut self) {
         for dsym in &self.bin.dynsyms {
             self.dynsyms.push(ResolvedSym {
-                symbol: self.bin.dynstrtab.get_at(dsym.st_name).unwrap_or(SYMFAIL),
+                symbol: self.bin.dynstrtab.get_at(dsym.st_name).unwrap_or(UWFAIL),
                 version: None,
                 info: dsym,
             })
@@ -95,8 +96,12 @@ impl FileData<'_> {
                 for verneed in self.verneed.iter() {
                     for vernaux in verneed.iter() {
                         if self.versyms[dsym_idx].vs_val == vernaux.vna_other {
-                            dsym.version =
-                                Some(self.bin.dynstrtab.get_at(vernaux.vna_name).unwrap_or(""));
+                            dsym.version = Some(
+                                self.bin
+                                    .dynstrtab
+                                    .get_at(vernaux.vna_name)
+                                    .unwrap_or(UWFAIL),
+                            );
                         }
                     }
                 }
