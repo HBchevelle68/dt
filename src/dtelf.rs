@@ -40,6 +40,35 @@ impl FileData<'_> {
 
     pub fn display_dynsyms(&mut self) {
         self.get_sym_versions();
+        let num = self.dynsyms.len();
+        if num > 0 {
+            println!("Symbol table '.dynsym' contains {num} entries:");
+            println!(
+                "{:>3}: {:>6} {:>15} {:<8} {:<6} {:<8} {:>4} {:<4}",
+                "Num", "Value", "Size", "Type", "Bind", " Vis", "Ndx", "Name",
+            );
+            for (i, s) in self.dynsyms.iter().enumerate() {
+                let symstr = match s.version {
+                    Some(ver) => {
+                        let tmp = format!("{}@{}", s.symbol, ver);
+                        tmp.to_owned()
+                    }
+                    _ => s.symbol.to_string(),
+                };
+
+                println!(
+                    "{:>3}: {:0>16} {:>5} {:<8} {:<6} {:>8} {:>4} {:<4}",
+                    i,
+                    s.info.st_value,
+                    s.info.st_size,
+                    type_to_str(s.info.st_type()),
+                    bind_to_str(s.info.st_bind()),
+                    visibility_to_str(s.info.st_visibility()),
+                    s.ndx_to_str(),
+                    symstr,
+                )
+            }
+        }
     }
 
     pub fn process_dynsyms(&mut self) {
@@ -50,18 +79,27 @@ impl FileData<'_> {
                 info: dsym,
             })
         }
-        dbg!(&self.dynsyms);
     }
 
     fn get_sym_versions(&mut self) {
         self.process_sym_version_info();
 
+        // Both verneed and versyms are required
         if !self.verneed.is_empty() && !self.versyms.is_empty() {
+            // TODO? -- I feel there is a better way to handle this in Rust
             for (dsym_idx, mut dsym) in self.dynsyms.iter_mut().enumerate() {
-                // for vernaux in self.{
-
-                //     if self.versyms[dsym_idx] == vernaux.
-                // }
+                // Its possible to have mutiple Verneed sections
+                // each with its own optional Vernaux structures following.
+                // Goblin makes use of iter() to access the Vernaux
+                // entries.
+                for verneed in self.verneed.iter() {
+                    for vernaux in verneed.iter() {
+                        if self.versyms[dsym_idx].vs_val == vernaux.vna_other {
+                            dsym.version =
+                                Some(self.bin.dynstrtab.get_at(vernaux.vna_name).unwrap_or(""));
+                        }
+                    }
+                }
             }
         }
     }
@@ -79,13 +117,7 @@ impl FileData<'_> {
                     None => {}
                 }
             }
-            None => {}
-        }
-
-        dbg!(&self.versyms);
-        dbg!(&self.verneed);
-        for x in self.verneed.iter() {
-            dbg!(&x);
+            _ => {}
         }
 
         // The Elfxx_Verneed section is an optional
@@ -96,18 +128,6 @@ impl FileData<'_> {
         self.verneed.is_empty() && self.versyms.is_empty()
     }
 }
-
-// impl Default for FileData<'_> {
-//     fn default() -> FileData<'static> {
-//         FileData {
-//             path: Default::default(),
-//             bin: Default::default(),
-//             dynsyms: Default::default(),
-//             syms: Default::default(),
-//             verneed: Default::default(),
-//         }
-//     }
-// }
 
 #[derive(Debug, Default)]
 struct ResolvedSym<'a> {
@@ -129,31 +149,6 @@ impl ResolvedSym<'_> {
         }
     }
 }
-
-// fn display_syms(syms: &Vec<ResolvedSym>) {
-//     let num = syms.len();
-//     if num > 0 {
-//         println!("Symbol table '.dynsym' contains {num} entries:");
-//         println!(
-//             "{:>3}: {:>6} {:>15} {:<8} {:<6} {:<8} {:>4} {:<4}",
-//             "Num", "Value", "Size", "Type", "Bind", "Vis", "Ndx", "Name",
-//         );
-//     }
-
-//     for (i, s) in syms.iter().enumerate() {
-//         println!(
-//             "{:>3}: {:0>16} {:>5} {:<8} {:<6} {:>8} {:>4} {:<4}",
-//             i,
-//             s.info.st_value,
-//             s.info.st_size,
-//             type_to_str(s.info.st_type()),
-//             bind_to_str(s.info.st_bind()),
-//             visibility_to_str(s.info.st_visibility()),
-//             s.ndx_to_str(),
-//             s.symbol,
-//         )
-//     }
-// }
 
 // fn resolve_dynamic_symbols<'a>(
 //     bin: &'a Elf<'a>,
