@@ -1,4 +1,4 @@
-use goblin::elf::symver::Verneed;
+use goblin::elf::symver::{Verneed, Versym};
 use goblin::elf::Elf;
 use goblin::elf64::section_header;
 use goblin::elf64::sym::{bind_to_str, type_to_str, visibility_to_str};
@@ -13,6 +13,7 @@ pub struct FileData<'a> {
     dynsyms: Vec<ResolvedSym<'a>>,
     syms: Vec<ResolvedSym<'a>>,
     verneed: Vec<Verneed<'a>>,
+    versyms: Vec<Versym>,
 }
 
 impl FileData<'_> {
@@ -20,16 +21,17 @@ impl FileData<'_> {
     // Instead this simply sets up the bare minimum needed
     // to do as much or as little further processing as
     // requested
-    pub fn lazy_new<'a>(path: &'a str, bytes: &'a [u8]) -> Result<FileData<'a>, Box<dyn Error>> {
+    pub fn lazy_parse<'a>(path: &'a str, bytes: &'a [u8]) -> Result<FileData<'a>, Box<dyn Error>> {
         // If parsing fails, dt as a whole
         // should really just bail. Just
         // pass back the error
         match Elf::parse(bytes) {
             Ok(bin) => Ok(FileData {
                 path,
-                bin: bin,
+                bin,
                 dynsyms: Default::default(),
                 syms: Default::default(),
+                versyms: Default::default(),
                 verneed: Default::default(),
             }),
             Err(e) => Err(Box::new(e)),
@@ -37,7 +39,7 @@ impl FileData<'_> {
     }
 
     pub fn display_dynsyms(&mut self) {
-        unimplemented!();
+        self.get_sym_versions();
     }
 
     pub fn process_dynsyms(&mut self) {
@@ -51,35 +53,61 @@ impl FileData<'_> {
         dbg!(&self.dynsyms);
     }
 
-    fn process_verneed(&mut self) -> bool {
+    fn get_sym_versions(&mut self) {
+        self.process_sym_version_info();
+
+        if !self.verneed.is_empty() && !self.versyms.is_empty() {
+            for (dsym_idx, mut dsym) in self.dynsyms.iter_mut().enumerate() {
+                // for vernaux in self.{
+
+                //     if self.versyms[dsym_idx] == vernaux.
+                // }
+            }
+        }
+    }
+
+    fn process_sym_version_info(&mut self) -> bool {
         // Goblin stores this data raw and Elf files
         // store this data somewhat deeply nested.
         // Let's bring this data more to the forefront
         // for easier access
-        for verneed in self.bin.verneed.unwrap().iter() {
-            dbg!(&verneed);
-            self.verneed.push(verneed);
+        match &self.bin.versym {
+            Some(versym_sec) => {
+                self.versyms = versym_sec.into_iter().collect();
+                match &self.bin.verneed {
+                    Some(verneed_sec) => self.verneed = verneed_sec.into_iter().collect(),
+                    None => {}
+                }
+            }
+            None => {}
         }
+
+        dbg!(&self.versyms);
+        dbg!(&self.verneed);
+        for x in self.verneed.iter() {
+            dbg!(&x);
+        }
+
         // The Elfxx_Verneed section is an optional
         // section. Its completely possible, this info
         // is just simply not here. This is not an error
         // and is in compliance with ELF standard
         // https://refspecs.linuxfoundation.org/LSB_3.0.0/LSB-PDA/LSB-PDA.junk/symversion.html
-        self.verneed.is_empty()
+        self.verneed.is_empty() && self.versyms.is_empty()
     }
 }
 
-impl Default for FileData<'_> {
-    fn default() -> FileData<'static> {
-        FileData {
-            path: Default::default(),
-            bin: Default::default(),
-            dynsyms: Default::default(),
-            syms: Default::default(),
-            verneed: Default::default(),
-        }
-    }
-}
+// impl Default for FileData<'_> {
+//     fn default() -> FileData<'static> {
+//         FileData {
+//             path: Default::default(),
+//             bin: Default::default(),
+//             dynsyms: Default::default(),
+//             syms: Default::default(),
+//             verneed: Default::default(),
+//         }
+//     }
+// }
 
 #[derive(Debug, Default)]
 struct ResolvedSym<'a> {

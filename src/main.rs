@@ -34,9 +34,10 @@ fn dt() -> DtCode {
                     }
                 };
             } else if let Some(_lsym) = matches.get_one::<bool>("list") {
-                match FileData::lazy_new(arg_path.to_str().unwrap(), &bytes) {
-                    Ok(elf_file) => {
+                match FileData::lazy_parse(arg_path.to_str().unwrap(), &bytes) {
+                    Ok(mut elf_file) => {
                         elf_file.process_dynsyms();
+                        elf_file.display_dynsyms();
                     }
                     Err(e) => {
                         println!("{e}");
