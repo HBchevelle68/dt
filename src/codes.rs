@@ -1,10 +1,9 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 #[repr(i32)]
 pub enum DtCode {
     Success = 0,
-    MissingArg = -1,
-    BadArg = -2,
-    IoReadFail = -3,
-    ElfParse = -4,
-    ElfNoDynSym = -5,
+    //BadArg = 0x1,
+    IoReadFail = 2,
+    ElfParse = 3,
+    //ElfNoDynSym = 0x4,
 }
