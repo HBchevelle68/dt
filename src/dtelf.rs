@@ -53,6 +53,11 @@ impl FileData<'_> {
         }
     }
 
+    pub fn diplay_symbol_tables(&mut self) {
+        self.display_dynsyms();
+        self.display_symtab();
+    }
+
     pub fn display_dynsyms(&mut self) {
         if self.dynsyms.is_empty() {
             self.process_dynsyms();

@@ -36,10 +36,7 @@ fn dt() -> DtCode {
             } else if let Some(_lsym) = matches.get_one::<bool>("list") {
                 match FileData::lazy_parse(arg_path.to_str().unwrap(), &bytes) {
                     Ok(mut elf_file) => {
-                        elf_file.process_dynsyms();
-                        elf_file.display_dynsyms();
-                        elf_file.process_symtab();
-                        elf_file.display_symtab();
+                        elf_file.diplay_symbol_tables();
                     }
                     Err(e) => {
                         println!("{e}");
