@@ -38,6 +38,8 @@ fn dt() -> DtCode {
                     Ok(mut elf_file) => {
                         elf_file.process_dynsyms();
                         elf_file.display_dynsyms();
+                        elf_file.process_symtab();
+                        elf_file.display_symtab();
                     }
                     Err(e) => {
                         println!("{e}");
