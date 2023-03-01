@@ -93,6 +93,8 @@ impl FileData<'_> {
         }
     }
 
+    // pub get_sym()
+
     fn get_dynsym_versions(&mut self) {
         // Both verneed and versyms are required
         if self.process_sym_version_info() {
