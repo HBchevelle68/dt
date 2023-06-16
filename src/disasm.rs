@@ -31,7 +31,9 @@ pub fn src_disasm(path: &Path, func: &str) {
         .arg(tmpfnc)
         .arg(path.to_str().unwrap())
         .output();
-
+    
+    println!();
+    
     println!(
         "{}",
         String::from_utf8_lossy(&output.as_ref().unwrap().stderr)
